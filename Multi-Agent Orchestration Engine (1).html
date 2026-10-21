@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Multi-Agent Orchestration Engine</title>
+<style>
+:root{--bg:#f7f7f5;--card:#fff;--tx:#1b1b1a;--mut:#6b6b66;--bd:#dcdcd6;--ac:#2d5be3;--ok:#1e8e4e;--wa:#b7791f;--er:#c0392b;--run:#2d5be3;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#161615;--card:#212120;--tx:#ececE8;--mut:#9a9a94;--bd:#37372f;--ac:#7c9cff;--ok:#4cc17f;--wa:#e0a84a;--er:#ef6b5c;--run:#7c9cff}}
+:root[data-theme="dark"]{--bg:#161615;--card:#212120;--tx:#ececE8;--mut:#9a9a94;--bd:#37372f;--ac:#7c9cff;--ok:#4cc17f;--wa:#e0a84a;--er:#ef6b5c;--run:#7c9cff}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:980px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:22px;margin:0 0 4px}h2{font-size:15px;margin:0 0 10px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut)}
+p.sub{margin:0 0 18px;color:var(--mut)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:14px}
+label{display:block;font-size:13px;color:var(--mut);margin:8px 0 4px}
+textarea,input[type=text]{width:100%;background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:9px;font:inherit}
+textarea{min-height:120px;resize:vertical}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:10px}
+button{background:var(--ac);color:#fff;border:0;border-radius:8px;padding:9px 16px;font:inherit;font-weight:600;cursor:pointer}
+button.sec{background:transparent;color:var(--tx);border:1px solid var(--bd)}button:disabled{opacity:.5;cursor:default}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.node{border:1px solid var(--bd);border-left:4px solid var(--bd);border-radius:10px;padding:10px;background:var(--bg)}
+.node b{display:block}.node small{color:var(--mut);display:block}
+.node.running{border-left-color:var(--run)}.node.done{border-left-color:var(--ok)}.node.retry{border-left-color:var(--wa)}.node.failed{border-left-color:var(--er)}
+.badge{font-size:12px;font-weight:600}.running .badge{color:var(--run)}.done .badge{color:var(--ok)}.retry .badge{color:var(--wa)}
+#log{font:12.5px/1.6 ui-monospace,Menlo,Consolas,monospace;max-height:210px;overflow:auto;background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:8px}
+#log div span{color:var(--mut)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}.tabs button{background:transparent;color:var(--tx);border:1px solid var(--bd);padding:6px 12px}.tabs button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+pre{white-space:pre-wrap;word-break:break-word;margin:0;font:13.5px/1.6 inherit}
+.scroll{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:14px}td,th{border-bottom:1px solid var(--bd);padding:6px 8px;text-align:left;vertical-align:top}
+.stats{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:var(--mut);margin-top:8px}.stats b{color:var(--tx)}
+[hidden]{display:none!important}
+.credit{text-align:center;color:var(--mut);font-size:13px;margin:28px 0 0;padding-top:16px;border-top:1px solid var(--bd)}
+.top{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid var(--bd);background:var(--card)}
+.menuwrap{position:relative}#menu{position:absolute;right:0;top:110%;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:6px;z-index:5;min-width:220px;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+#menu button{display:block;width:100%;text-align:left;background:transparent;color:var(--tx);font-weight:500;padding:9px 10px}#menu button:hover{background:var(--bg)}
+#log{font:14px/1.45 system-ui,sans-serif;background:transparent;border:0;padding:0;max-height:340px}
+.ev{display:flex;gap:12px;align-items:flex-start;padding:8px 0;position:relative}
+.ev i{font-style:normal;width:34px;height:34px;flex:none;border-radius:50%;display:grid;place-items:center;background:var(--bg);border:2px solid var(--bd);z-index:1}
+.ev:not(:last-child)::before{content:'';position:absolute;left:16px;top:38px;bottom:-8px;width:2px;background:var(--bd)}
+.ev.ok i{border-color:var(--ok)}.ev.warn i{border-color:var(--wa)}.ev.bad i{border-color:var(--er)}.ev.info i{border-color:var(--ac)}
+.ev b{display:block}.ev small{display:block;color:var(--mut)}.ev time{margin-left:auto;color:var(--mut);font-size:12px;white-space:nowrap}
+.hero{border-radius:14px;padding:18px;color:#fff;background:linear-gradient(135deg,#2d5be3,#7a3de0);margin-bottom:12px}.hero h3{margin:0 0 4px;font-size:20px}.hero p{margin:0;opacity:.92}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:10px;margin-bottom:14px}
+.kpi{background:var(--bg);border:1px solid var(--bd);border-radius:12px;padding:12px;text-align:center}.kpi b{display:block;font-size:26px}.kpi span{font-size:12px;color:var(--mut)}
+.bar{display:flex;align-items:center;gap:10px;margin:8px 0}.bar label{flex:0 0 200px;margin:0;color:var(--tx)}.bar div{flex:1;background:var(--bg);border-radius:99px;height:14px;overflow:hidden}.bar div i{display:block;height:100%;border-radius:99px}
+.pill{font-size:12px;font-weight:700;padding:2px 9px;border-radius:99px;color:#fff;white-space:nowrap}.High{background:var(--er)}.Medium{background:var(--wa)}.Low{background:var(--ok)}
+.chip{display:inline-block;background:var(--bg);border:1px solid var(--bd);border-radius:99px;padding:3px 10px;margin:3px 4px 0 0;font-size:13px}
+.act{display:flex;gap:12px;border:1px solid var(--bd);border-radius:12px;padding:12px;margin-bottom:8px;background:var(--bg)}.act .n{flex:none;width:30px;height:30px;border-radius:50%;background:var(--ac);color:#fff;display:grid;place-items:center;font-weight:700}
+.doc{white-space:pre-wrap;font:15px/1.7 system-ui,sans-serif}
+.acard{border:1px solid var(--bd);border-radius:12px;padding:12px;background:var(--card)}.acard small{color:var(--mut);display:block;margin-top:4px}
+.tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;border:1px solid var(--bd);color:var(--mut);margin-left:6px}
+@media(max-width:560px){.bar{flex-wrap:wrap}.bar label{flex-basis:100%}}
+</style></head><body><header class='top'><b>🧭 AI Orchestration Studio</b><div class='menuwrap'><button class='sec' id='menuBtn' aria-expanded='false'>☰ Menu</button><div id='menu' hidden><button data-v='run'>▶ Run workflow</button><button data-v='list'>👥 Available agents</button><button data-v='create'>➕ Create new agent</button></div></div></header><main>
+<div id='v-run'><h1>Multi-Agent Orchestration &amp; Workflow Engine</h1>
+<p class="sub">An orchestrator turns a business objective into a dependency graph, runs worker agents in parallel where it can, retries failures, and assembles a final package.</p>
+
+<section class="card">
+<label for="obj">Business objective</label>
+<input type="text" id="obj" value="Analyze this financial report and generate a compliance strategy">
+<label for="doc">Source document (paste text; the extractor agent reads this)</label>
+<textarea id="doc"></textarea>
+<div class="row">
+<button id="run">Run workflow</button><button class="sec" id="reset">Reset sample</button>
+<label style="margin:0;display:flex;gap:6px;align-items:center"><input type="checkbox" id="fail" checked> Inject a transient failure (shows retry logic)</label>
+<label style="margin:0;display:flex;gap:6px;align-items:center"><input type="checkbox" id="appr" checked> Require human approval of the plan</label>
+</div></section>
+
+<section class="card"><h2>Your team and workflow</h2><div class="grid" id="nodes"></div><div id="gate"></div>
+<div class="stats" id="stats"></div></section>
+<section class="card"><h2>Live activity</h2><div id="log" aria-live="polite"></div></section>
+<section class="card"><h2>Your report</h2><div class="tabs" id="tabs"></div><div class="scroll" id="out"><span style="color:var(--mut)">Run the workflow to generate the package.</span></div></section>
+<p class="sub" style="font-size:13px">Agents here are deterministic in-browser workers (regex extraction and a rule-based regulatory map) so the demo runs with no API key. The orchestration layer (planner, dependency scheduler, parallelism, retries with backoff, event trace) is the real part; each worker is a function you can swap for an LLM call.</p></div>
+<div id='v-list' hidden><h1>Available agents</h1><p class='sub'>Every specialist the orchestrator can choose from. Custom agents are assigned automatically when your objective or source document mentions their trigger keywords.</p><div class='grid' id='agentList'></div></div>
+<div id='v-create' hidden><h1>Create a new agent</h1><p class='sub'>Describe a specialist in plain language. It joins the team automatically whenever the objective or source document mentions one of its keywords.</p><section class='card'><label for='ag-name'>Agent name</label><input type='text' id='ag-name' maxlength='40' placeholder='e.g. Data Privacy Officer'><label for='ag-role'>What does it do?</label><input type='text' id='ag-role' maxlength='120' placeholder='e.g. Checks how customer data is collected and shared'><label for='ag-kw'>Assign it when the text mentions (comma separated)</label><input type='text' id='ag-kw' placeholder='e.g. personal data, consent, privacy'><label for='ag-focus'>What should it recommend?</label><textarea id='ag-focus' maxlength='400' style='min-height:80px' placeholder='e.g. Confirm a lawful basis for each data use and update the privacy notice.'></textarea><div class='row'><button id='ag-save'>Save agent</button><button class='sec' id='ag-test'>Test against my current objective and document</button></div><p id='ag-msg' class='sub' style='margin:10px 0 0' role='status'></p></section></div>
+<p class='credit'>This application was developed by Idham</p></main>
+<script>
+const SAMPLE=`Northwind Holdings FY2025 Annual Report
+Revenue grew 12% to $480M, with net income of $41.5M. Operating margin fell to 9.4% from 11.2% in 2024.
+The group holds $210M of long-term debt under loan covenants requiring a leverage ratio below 3.5x. Management uses interest-rate derivatives and FX hedging with notional value of $95M.
+Related party transactions with Northwind Logistics totalled $18.2M. A material weakness was identified in inventory controls at an overseas subsidiary in Vietnam.
+The company processes personal data of 2.3 million customers and transfers it cross-border to shared services centres. Cash payments and remittance flows exceeded $60M across 14 markets.`;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+$('doc').value=SAMPLE;$('reset').onclick=()=>{$('doc').value=SAMPLE};
+
+const RULES=[
+ {k:/derivativ|hedg/i,label:'Derivatives and hedging',sev:3,regs:['IFRS 9 / ASC 815 hedge documentation','EMIR / Dodd-Frank trade reporting'],act:'Formalise hedge designation memos and quarterly effectiveness testing.'},
+ {k:/related.party/i,label:'Related-party transactions',sev:3,regs:['IAS 24 disclosure','SOX 404 approval controls'],act:'Route all related-party deals through an audit-committee approval log.'},
+ {k:/personal data|customer data|privacy/i,label:'Personal data processing',sev:3,regs:['GDPR Art. 28/44','PDPA (Malaysia) cross-border rule'],act:'Complete a data-transfer impact assessment and sign SCCs with shared-service centres.'},
+ {k:/cross-border|overseas|subsidiar/i,label:'Cross-border and subsidiary risk',sev:2,regs:['OECD BEPS transfer pricing','FATCA / CRS reporting'],act:'Refresh transfer-pricing files and map subsidiary reporting calendars.'},
+ {k:/debt|loan|covenant/i,label:'Debt covenants',sev:2,regs:['IFRS 7 liquidity disclosure','Lender covenant reporting'],act:'Stand up a covenant headroom dashboard with early-warning triggers.'},
+ {k:/cash|remittance|payment/i,label:'High-volume payment flows',sev:2,regs:['AML/CFT (AMLA 2001 / FATF)','Sanctions screening'],act:'Tune transaction-monitoring thresholds by market and re-run sanctions screening.'},
+ {k:/material weakness|restate/i,label:'Internal control weakness',sev:3,regs:['SOX 302 / 404 remediation'],act:'Open a remediation plan with owner, deadline and re-test evidence.'}
+];
+const AGENTS={
+ async extractor(ctx){const t=ctx.doc;
+  const amounts=[...t.matchAll(/\$\s?[\d.,]+\s?[MBK]?/g)].map(m=>m[0].trim());
+  const percents=[...t.matchAll(/\d+(?:\.\d+)?%/g)].map(m=>m[0]);
+  const years=[...new Set([...t.matchAll(/\b(20\d\d)\b/g)].map(m=>m[1]))];
+  const flags=RULES.filter(r=>r.k.test(t));
+  return{amounts,percents,years,flags:flags.map(f=>f.label),words:t.split(/\s+/).filter(Boolean).length};},
+ async regulatory(ctx){const e=ctx.results.extractor;
+  return RULES.filter(r=>e.flags.includes(r.label)).map(r=>({topic:r.label,regs:r.regs,sev:r.sev}));},
+ async risk(ctx){const reg=ctx.results.regulatory;
+  const rows=reg.map(r=>({topic:r.topic,score:r.sev*(r.regs.length>1?2:1.5),level:r.sev>=3?'High':'Medium'}));
+  rows.sort((a,b)=>b.score-a.score);
+  return{rows,total:rows.reduce((s,r)=>s+r.score,0)};},
+ async writer(ctx){const e=ctx.results.extractor,rk=ctx.results.risk;
+  const acts=rk.rows.map((r,i)=>{const rule=RULES.find(x=>x.label===r.topic);return`${i+1}. [${r.level}] ${r.topic}: ${rule.act}`});
+  return`COMPLIANCE STRATEGY\nObjective: ${ctx.objective}\n\nSummary\nThe document (${e.words} words, ${e.amounts.length} monetary figures) raises ${rk.rows.length} compliance themes. Composite risk score: ${rk.total.toFixed(1)}.\n\nPriority actions\n${acts.join('\n')}\n\nGovernance\n- Appoint an executive owner per theme and report monthly to the audit committee.\n- Re-run this workflow after each filing or material event.`+extra(ctx);},
+ async finance(ctx){const t=ctx.doc,n=r=>{const m=t.match(r);return m?m[1]:null};
+  return{revenue:n(/revenue[^$]*\$\s?([\d.,]+\s?[MB])/i),netIncome:n(/net income[^$]*\$\s?([\d.,]+\s?[MB])/i),margin:n(/margin[^\d]*(\d+(?:\.\d+)?%)/i)}},
+ async contracts(ctx){const cl=['indemnif','terminat','liabilit','renew','confidential','governing law','penalt','exclusiv'];
+  const found=cl.filter(c=>new RegExp(c,'i').test(ctx.doc));return{clausesFound:found,missing:cl.filter(c=>!found.includes(c))}},
+ async reviewer(ctx){const rk=ctx.results.risk,txt=ctx.results.writer;
+  const checks=rk.rows.map(r=>({check:'Action exists for '+r.topic,pass:txt.includes(r.topic)}));
+  checks.push({check:'Objective restated in output',pass:txt.includes(ctx.objective)});
+  return{checks,passed:checks.every(c=>c.pass)};}
+};
+let PLAN=[
+ {id:'extractor',name:'Data Extractor',role:'Pulls figures and risk signals',deps:[]},
+ {id:'regulatory',name:'Regulatory Analyst',role:'Maps signals to regulations',deps:['extractor']},
+ {id:'risk',name:'Risk Scorer',role:'Ranks themes by severity',deps:['regulatory']},
+ {id:'writer',name:'Strategy Writer',role:'Drafts the compliance strategy',deps:['risk','extractor']},
+ {id:'reviewer',name:'QA Reviewer',role:'Verifies the draft',deps:['writer','risk']}
+];
+function approval(){return new Promise(res=>{const g=$('gate');
+ g.innerHTML='<div class="node retry" style="margin-top:10px"><b>Approval required</b><small>Review the proposed graph above. No agent runs until you approve.</small><div class="row"><button id="ap">Approve and run</button><button class="sec" id="rj">Reject</button></div></div>';
+ $('ap').onclick=()=>{g.innerHTML='';res(true)};$('rj').onclick=()=>{g.innerHTML='';res(false)}})}
+function plan(objective,doc){const o=objective.toLowerCase(),has=r=>r.test(o);
+ const P=[{id:'extractor',name:'Data Extractor',role:'Pulls figures and risk signals',deps:[]}],wd=['risk','extractor'];
+ if(has(/financ|report|revenue|margin|earning|annual/)){P.push({id:'finance',name:'Financial Analyst',role:'Reads revenue, margin, income',deps:['extractor']});wd.push('finance')}
+ if(has(/contract|vendor|agreement|clause|supplier/)){P.push({id:'contracts',name:'Contract Reviewer',role:'Checks key clauses and gaps',deps:['extractor']});wd.push('contracts')}
+ custom.filter(a=>a.on).forEach(a=>{const m=matchInfo(a,objective,doc);if(m.kws.length){const id='c_'+a.id;P.push({id,name:a.name,role:a.role,deps:['extractor'],custom:a,why:m.kws.join(', ')});wd.push(id)}});
+ P.push({id:'regulatory',name:'Regulatory Analyst',role:'Maps signals to regulations',deps:['extractor']},{id:'risk',name:'Risk Scorer',role:'Ranks themes by severity',deps:['regulatory']},{id:'writer',name:'Strategy Writer',role:'Drafts the strategy',deps:wd},{id:'reviewer',name:'QA Reviewer',role:'Verifies the draft',deps:['writer','risk']});
+ return P}
+function extra(ctx){let s='';const f=ctx.results.finance,c=ctx.results.contracts;
+ if(f)s+=`\n\nFinancial context\n- Revenue ${f.revenue||'n/a'}, net income ${f.netIncome||'n/a'}, operating margin ${f.margin||'n/a'}.`;
+ for(const p of PLAN)if(p.custom&&ctx.results[p.id]){const q=ctx.results[p.id];s+='\n\n'+p.custom.name+'\n- '+(q.hits.length?q.hits.join('\n- '):'No matching passages.')+'\n- Recommendation: '+p.custom.focus}
+ if(c)s+=`\n\nContract coverage\n- Clauses found: ${c.clausesFound.join(', ')||'none'}.\n- Missing: ${c.missing.join(', ')||'none'}.`;
+ return s}
+let state={};
+const FX=[
+[/^Orchestrator received objective: (.*)/,x=>['🎯','Objective received',x[1],'info']],
+[/^Planner chose (\d+) agents from a registry of \d+: (.*)/,x=>['🧩','Team assembled',x[1]+' specialists: '+x[2],'info']],
+[/^Custom agent (.*) assigned because the text mentions: (.*)/,x=>['🆕',x[1]+' joined the team','Triggered by: '+x[2],'ok']],
+[/^Graph validated/,()=>['🛡️','Safety check passed','Only approved agents, no circular steps','ok']],
+[/^Plan is awaiting/,()=>['✋','Waiting for your approval','Nothing runs until you approve','warn']],
+[/^Plan approved/,()=>['✅','Plan approved','','ok']],
+[/^Plan rejected/,()=>['⛔','Plan rejected','Nothing was run','bad']],
+[/^Dispatching in parallel: (.*)/,x=>['⚡','Working side by side',x[1],'info']],
+[/^(.*) started \(attempt (\d+)\)/,x=>['▶️',x[1]+(x[2]>1?' is trying again':' started'),'',x[2]>1?'warn':'info']],
+[/^(.*) finished/,x=>['✔️',x[1]+' finished','','ok']],
+[/^(.*) error: (.*); backing off/,x=>['🔁',x[1]+' hit a temporary problem','Retrying automatically ('+x[2]+')','warn']],
+[/^All tasks complete/,()=>['📦','Report assembled','Every specialist has finished','ok']],
+[/^Workflow aborted/,x=>['⚠️','Workflow stopped',x[0],'bad']]];
+function log(m){let f=['•',m,'','info'];for(const[r,fn]of FX){const x=m.match(r);if(x){f=fn(x);break}}
+ const d=document.createElement('div');d.className='ev '+f[3];d.innerHTML='<i>'+f[0]+'</i><div><b>'+esc(f[1])+'</b>'+(f[2]?'<small>'+esc(f[2])+'</small>':'')+'</div><time>'+new Date().toLocaleTimeString([],{hour12:false})+'</time>';
+ $('log').appendChild(d);$('log').scrollTop=1e9}
+function draw(){$('nodes').innerHTML=PLAN.map(p=>{const s=state[p.id]||{st:'pending'};
+ const lab={pending:'Waiting',running:'Running',done:'Done',retry:'Retrying',failed:'Failed'}[s.st];
+ return`<div class="node ${s.st}"><b>${esc(p.name)}</b><small>${esc(p.role)}</small><small>Needs: ${p.deps.map(d=>(PLAN.find(q=>q.id===d)||{}).name||d).join(', ')||'none'}</small><span class="badge">${lab}${s.ms?' · '+(s.ms/1000).toFixed(1)+'s':''}${s.tries>1?' · attempt '+s.tries:''}</span></div>`}).join('')}
+async function runTask(p,ctx,failOnce){
+ const s=state[p.id]={st:'running',tries:0};
+ for(let a=1;a<=3;a++){s.tries=a;s.st=a>1?'retry':'running';draw();
+  log(`${p.name} started (attempt ${a})`);const t0=performance.now();
+  await sleep(700+Math.random()*900);
+  try{if(failOnce&&a===1)throw new Error('upstream timeout');
+   ctx.results[p.id]=await (p.custom?runCustom(p.custom,ctx):AGENTS[p.id](ctx));s.st='done';s.ms=performance.now()-t0;draw();log(`${p.name} finished`);return}
+  catch(err){log(`${p.name} error: ${err.message}; backing off ${a*400}ms`);await sleep(a*400)}}
+ s.st='failed';draw();throw new Error(p.name+' failed after 3 attempts')}
+async function run(){
+ $('run').disabled=true;$('log').innerHTML='';$('out').textContent='';$('tabs').innerHTML='';$('stats').innerHTML='';state={};draw();
+ const ctx={objective:$('obj').value.trim()||'Untitled objective',doc:$('doc').value,results:{}};
+ log('Orchestrator received objective: '+ctx.objective);
+ PLAN=plan(ctx.objective,ctx.doc);state={};draw();log('Planner chose '+PLAN.length+' agents from a registry of '+(7+custom.length)+': '+PLAN.map(p=>p.name).join(', '));PLAN.filter(p=>p.custom).forEach(p=>log('Custom agent '+p.name+' assigned because the text mentions: '+p.why));log('Graph validated: known agents only, no cycles, all dependencies present');
+ if($('appr').checked){log('Plan is awaiting human approval; no agent has run');const ok=await approval();log(ok?'Plan approved by reviewer':'Plan rejected by reviewer; nothing was executed');if(!ok){$('out').textContent='Plan rejected. No agents were run.';$('run').disabled=false;return}}
+ const t0=performance.now(),pending=new Set(PLAN.map(p=>p.id)),active=new Map();let waves=0,maxPar=0;
+ try{while(pending.size||active.size){
+  const ready=PLAN.filter(p=>pending.has(p.id)&&p.deps.every(d=>ctx.results[d]!==undefined));
+  if(ready.length){waves++;log('Dispatching in parallel: '+ready.map(r=>r.name).join(', '))}
+  for(const p of ready){pending.delete(p.id);
+   const pr=runTask(p,ctx,$('fail').checked&&p.id==='regulatory').finally(()=>active.delete(p.id));active.set(p.id,pr)}
+  maxPar=Math.max(maxPar,active.size);
+  if(active.size)await Promise.race(active.values());else break}
+  log('All tasks complete. Assembling final package.');
+  show2(ctx,performance.now()-t0,maxPar)}
+ catch(e){log('Workflow aborted: '+e.message);$('out').textContent='Workflow aborted: '+e.message}
+ $('run').disabled=false}
+function show(ctx,ms,par){
+ const r=ctx.results,tries=Object.values(state).reduce((s,x)=>s+x.tries,0);
+ $('stats').innerHTML=`<span>Total time <b>${(ms/1000).toFixed(1)}s</b></span><span>Agents <b>${PLAN.length}</b></span><span>Attempts <b>${tries}</b></span><span>Peak concurrency <b>${par}</b></span><span>QA <b>${r.reviewer.passed?'passed':'needs review'}</b></span>`;
+ const tab={
+  'Strategy':()=>'<pre>'+esc(r.writer)+'</pre>',
+  'Extracted data':()=>`<table><tr><th>Money</th><td>${esc(r.extractor.amounts.join(', ')||'none')}</td></tr><tr><th>Percentages</th><td>${esc(r.extractor.percents.join(', ')||'none')}</td></tr><tr><th>Years</th><td>${esc(r.extractor.years.join(', ')||'none')}</td></tr><tr><th>Risk signals</th><td>${esc(r.extractor.flags.join('; ')||'none')}</td></tr></table>`,
+  'Regulatory map':()=>'<table><tr><th>Theme</th><th>Regulations</th></tr>'+r.regulatory.map(x=>`<tr><td>${esc(x.topic)}</td><td>${esc(x.regs.join('; '))}</td></tr>`).join('')+'</table>',
+  'Risk ranking':()=>'<table><tr><th>Theme</th><th>Level</th><th>Score</th></tr>'+r.risk.rows.map(x=>`<tr><td>${esc(x.topic)}</td><td>${x.level}</td><td>${x.score}</td></tr>`).join('')+'</table>',
+  ...(r.finance?{'Financials':()=>'<pre>'+esc(JSON.stringify(r.finance,null,2))+'</pre>'}:{}),
+  ...(r.contracts?{'Contracts':()=>'<pre>'+esc(JSON.stringify(r.contracts,null,2))+'</pre>'}:{}),
+  'QA report':()=>'<table>'+r.reviewer.checks.map(c=>`<tr><td>${c.pass?'Pass':'Fail'}</td><td>${esc(c.check)}</td></tr>`).join('')+'</table>',
+  'JSON':()=>'<pre>'+esc(JSON.stringify({objective:ctx.objective,...r},null,2))+'</pre>'};
+ $('tabs').innerHTML='';
+ Object.keys(tab).forEach((k,i)=>{const b=document.createElement('button');b.textContent=k;
+  b.onclick=()=>{[...$('tabs').children].forEach(c=>c.classList.remove('on'));b.classList.add('on');$('out').innerHTML=tab[k]()};
+  $('tabs').appendChild(b);if(i===0)b.click()})}
+const BUILTIN=[['📄','Data Extractor','Pulls figures, dates and risk signals from the document','Always'],['📈','Financial Analyst','Reads revenue, margin and income','When the objective mentions finance, report, revenue, margin, earnings or annual'],['📑','Contract Reviewer','Checks key clauses and gaps','When the objective mentions contract, vendor, agreement, clause or supplier'],['⚖️','Regulatory Analyst','Maps risk signals to regulations','Always'],['🎯','Risk Scorer','Ranks themes by severity','Always'],['✍️','Strategy Writer','Drafts the compliance strategy','Always'],['🔍','QA Reviewer','Verifies the draft before release','Always']];
+let custom=[];try{custom=JSON.parse(localStorage.getItem('orch.agents')||'[]')}catch(e){}
+const persist=()=>{try{localStorage.setItem('orch.agents',JSON.stringify(custom))}catch(e){}};
+function matchInfo(a,obj,doc){const t=(obj+' '+doc).toLowerCase(),kws=a.kws.filter(k=>t.includes(k));const hits=doc.split(/(?<=[.!?])\s+|\n+/).filter(s=>a.kws.some(k=>s.toLowerCase().includes(k)));return{kws,hits}}
+async function runCustom(a,ctx){const m=matchInfo(a,ctx.objective,ctx.doc);return{matched:m.kws,hits:m.hits.slice(0,4)}}
+function renderList(){$('agentList').innerHTML=BUILTIN.map(b=>`<div class='acard'><b>${b[0]} ${b[1]}</b><span class='tag'>Built-in</span><div>${b[2]}</div><small>Assigned: ${b[3]}</small></div>`).join('')+custom.map((a,i)=>`<div class='acard'><b>🆕 ${esc(a.name)}</b><span class='tag'>Custom</span><div>${esc(a.role)}</div><small>Assigned when the objective or document mentions: ${esc(a.kws.join(', '))}</small><div class='row'><label style='margin:0;display:flex;gap:6px;align-items:center'><input type='checkbox' data-t='${i}' ${a.on?'checked':''}> Active</label><button class='sec' data-d='${i}'>Delete</button></div></div>`).join('')}
+$('agentList').onclick=e=>{const d=e.target.dataset;if(d.d!==undefined){custom.splice(+d.d,1);persist();renderList()}};
+$('agentList').onchange=e=>{const d=e.target.dataset;if(d.t!==undefined){custom[+d.t].on=e.target.checked;persist()}};
+function showView(v){['run','list','create'].forEach(x=>$('v-'+x).hidden=x!==v);$('menu').hidden=true;$('menuBtn').setAttribute('aria-expanded','false');if(v==='list')renderList();scrollTo(0,0)}
+$('menuBtn').onclick=()=>{const h=$('menu').hidden;$('menu').hidden=!h;$('menuBtn').setAttribute('aria-expanded',String(h))};
+$('menu').onclick=e=>{if(e.target.dataset.v)showView(e.target.dataset.v)};
+const val=()=>({name:$('ag-name').value.trim(),role:$('ag-role').value.trim(),kws:$('ag-kw').value.split(',').map(s=>s.trim().toLowerCase()).filter(Boolean).slice(0,12),focus:$('ag-focus').value.trim()});
+$('ag-test').onclick=()=>{const a=val();if(!a.kws.length){$('ag-msg').textContent='Add at least one keyword first.';return}const m=matchInfo(a,$('obj').value,$('doc').value);$('ag-msg').textContent=m.kws.length?`Would be assigned: the current objective or document mentions ${m.kws.join(', ')} (${m.hits.length} matching passage${m.hits.length===1?'':'s'}).`:'Would NOT be assigned to the current objective and document: none of the keywords appear.'};
+$('ag-save').onclick=()=>{const a=val();if(a.name.length<2||!a.role||!a.kws.length||!a.focus){$('ag-msg').textContent='Please fill in every field, with at least one keyword.';return}
+ if(custom.some(c=>c.name.toLowerCase()===a.name.toLowerCase())||BUILTIN.some(b=>b[1].toLowerCase()===a.name.toLowerCase())){$('ag-msg').textContent='An agent with that name already exists.';return}
+ a.id=a.name.toLowerCase().replace(/[^a-z0-9]+/g,'_').slice(0,20)+Date.now().toString(36);a.on=true;custom.push(a);persist();['ag-name','ag-role','ag-kw','ag-focus'].forEach(i=>$(i).value='');$('ag-msg').textContent='';showView('list')};
+function show2(ctx,ms){const r=ctx.results,rows=r.risk.rows,hi=rows.filter(x=>x.level==='High').length,mx=Math.max(1,...rows.map(x=>x.score)),top=rows[0];
+ const A=rows.map((x,i)=>{const u=RULES.find(q=>q.label===x.topic);return`<div class='act'><div class='n'>${i+1}</div><div><b>${esc(x.topic)} <span class='pill ${x.level}'>${x.level}</span></b><div>${esc(u?u.act:'')}</div></div></div>`}),acts=A.join('')||'<p>No compliance themes were detected in this document.</p>';
+ const kp=[[rows.length,'Themes found'],[hi,'High priority'],[r.risk.total.toFixed(1),'Risk score'],[PLAN.length,'Specialists used'],[r.reviewer.passed?'Passed':'Review','Quality check']].map(k=>`<div class='kpi'><b>${k[0]}</b><span>${k[1]}</span></div>`).join('');
+ const chips=(a,f=x=>x)=>a.map(x=>`<span class='chip'>${esc(f(x))}</span>`).join('')||'None',e=r.extractor,f=r.finance,c=r.contracts;
+ let fd=`<b>Key figures</b><div>${chips(e.amounts)}</div><br><b>Risk signals spotted</b><div>${chips(e.flags)}</div>`;
+ if(f)fd+=`<br><br><b>Financial snapshot</b><div>${chips(['Revenue '+(f.revenue||'n/a'),'Net income '+(f.netIncome||'n/a'),'Margin '+(f.margin||'n/a')])}</div>`;
+ if(c)fd+=`<br><br><b>Contract clauses</b><div>${chips(c.clausesFound,x=>'✔ '+x)}${chips(c.missing,x=>'✖ missing: '+x)}</div>`;
+ PLAN.filter(p=>p.custom).forEach(p=>{const q=r[p.id];fd+=`<br><br><b>${esc(p.custom.name)} <span class='tag'>Custom</span></b>${q.hits.map(s=>`<p>“${esc(s)}”</p>`).join('')||'<p>No matching passages.</p>'}<small>Recommendation: ${esc(p.custom.focus)}</small>`});
+ const tab={'Summary':()=>`<p>We reviewed your document against <b>${rows.length}</b> compliance themes${top?`. The biggest concern is <b>${esc(top.topic)}</b>`:''}${hi?`, and ${hi} ${hi>1?'themes are':'theme is'} high priority`:''}.</p><p>Start with the top actions below, then work through the full plan in order.</p>${A.slice(0,3).join('')}`,
+ 'Risk levels':()=>rows.map(x=>`<div class='bar'><label>${esc(x.topic)}</label><div><i class='${x.level}' style='width:${Math.round(x.score/mx*100)}%'></i></div><span class='pill ${x.level}'>${x.level}</span></div>`).join('')||'None',
+ 'Regulations':()=>'<div class="grid">'+r.regulatory.map(x=>`<div class='acard'><b>${esc(x.topic)}</b><div>${chips(x.regs)}</div></div>`).join('')+'</div>',
+ 'Action plan':()=>acts,'Findings':()=>fd,'Full report':()=>'<div class="doc">'+esc(r.writer)+'</div>',
+ 'Raw data':()=>'<pre>'+esc(JSON.stringify({objective:ctx.objective,...r},null,2))+'</pre>'};
+ $('tabs').innerHTML='';$('stats').innerHTML='';
+ $('out').innerHTML=`<div class='hero'><h3>Your compliance report is ready</h3><p>${esc(ctx.objective)} · completed in ${(ms/1000).toFixed(1)}s by ${PLAN.length} specialists</p></div><div class='kpis'>${kp}</div><div class='tabs' id='tb'></div><div id='tc'></div>`;
+ Object.keys(tab).forEach((k,i)=>{const b=document.createElement('button');b.textContent=k;b.onclick=()=>{[...$('tb').children].forEach(c=>c.classList.remove('on'));b.classList.add('on');$('tc').innerHTML=tab[k]()};$('tb').appendChild(b);if(i===0)b.click()})}
+$('run').onclick=run;draw();
+</script></body></html>
